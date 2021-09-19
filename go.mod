@@ -1,4 +1,4 @@
-module github.com/michaelpeterswa/dapnettest
+module github.com/michaelpeterswa/dapnetsendweather
 
 go 1.16
 
