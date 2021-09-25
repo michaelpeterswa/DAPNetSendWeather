@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -17,17 +15,17 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logger.Fatal("Error loading .env file")
 	}
 
 	fileSettings, err := os.ReadFile("./settings.yaml")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Error loading settings.yaml file")
 	}
 
 	err = yaml.Unmarshal(fileSettings, &settings)
 	if err != nil {
-		log.Printf("Failed to unmarshal: %s\n", err.Error())
+		logger.Error("YAML failed to unmarshal to DapnetSettings", zap.Error(err))
 	}
 
 	me := dapnet.Sender{
@@ -42,16 +40,15 @@ func main() {
 	for _, forecast := range data.Periods {
 		startTime, err := time.Parse(time.RFC3339, forecast.StartTime)
 		if err != nil {
-			log.Panic(err.Error())
+			logger.Fatal("Could not parse startTime", zap.Error(err))
 		}
 		endTime, err := time.Parse(time.RFC3339, forecast.EndTime)
 		if err != nil {
-			log.Panic(err.Error())
+			logger.Fatal("Could not parse endTime", zap.Error(err))
 		}
 
 		if startTime.Before(time.Now()) && endTime.After(time.Now()) {
 			logger.Info("Sending Forecast", zap.String("forecast", forecast.DetailedForecast))
-			fmt.Println(me, settings)
 			sendCurrentForecast(forecast, me, settings)
 		}
 	}

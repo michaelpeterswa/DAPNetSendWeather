@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	dapnet "github.com/michaelpeterswa/godapnet"
@@ -15,12 +14,12 @@ import (
 func getWeatherData(url string) []byte {
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Println(err)
+		logger.Fatal("Could not get weather data from URL", zap.String("url", url), zap.Error(err))
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
+		logger.Fatal("Could not parse response body", zap.Error(err))
 	}
 	return body
 }
@@ -28,12 +27,12 @@ func getWeatherData(url string) []byte {
 func parseWeatherData(data []byte) Properties {
 	feature, err := geojson.UnmarshalFeature(data)
 	if err != nil {
-		log.Println(err)
+		logger.Fatal("Could not unmarshal GeoJSON feature", zap.Error(err))
 	}
 	var properties Properties
 	err = mapstructure.Decode(feature.Properties, &properties)
 	if err != nil {
-		zap.L().Error("Mapstructure Decode Failed", zap.Error(err))
+		logger.Fatal("Mapstructure Decode Failed", zap.Error(err))
 	}
 	return properties
 }
