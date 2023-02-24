@@ -47,5 +47,8 @@ func sendCurrentForecast(f Forecast, sender *godapnet.Sender, settings DapnetSet
 	mc := godapnet.NewMessageConfig(godapnet.Alphapoc602RMaxMessageLength, callsigns, txGps, emerg)
 
 	// send message
-	sender.Send(msg, mc)
+	err := sender.Send(msg, mc)
+	if err != nil {
+		logger.Error("Could not send message", zap.Error(err))
+	}
 }
