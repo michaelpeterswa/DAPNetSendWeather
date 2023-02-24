@@ -5,10 +5,10 @@ import (
 	"io"
 	"net/http"
 
-	dapnet "github.com/michaelpeterswa/godapnet"
 	"github.com/mitchellh/mapstructure"
 	geojson "github.com/paulmach/go.geojson"
 	"go.uber.org/zap"
+	"nw.codes/godapnet"
 )
 
 func getWeatherData(url string) []byte {
@@ -37,13 +37,15 @@ func parseWeatherData(data []byte) Properties {
 	return properties
 }
 
-func sendCurrentForecast(f Forecast, sender dapnet.Sender, settings DapnetSettings) {
+func sendCurrentForecast(f Forecast, sender *godapnet.Sender, settings DapnetSettings) {
 	msg := fmt.Sprintf("%s - %v%s - %s - Wind: %s %s", f.Name, f.Temperature, f.TemperatureUnit, f.ShortForecast, f.WindSpeed, f.WindDirection)
 	callsigns := settings.CallsignNames
 	txGps := settings.TransmitterGroupNames
 	emerg := false
 
-	messages := dapnet.CreateMessage(sender.Callsign, msg, callsigns, txGps, emerg)
-	payloads := dapnet.GeneratePayload(messages)
-	dapnet.SendMessage(payloads, sender.Username, sender.Password)
+	// set configuration for message
+	mc := godapnet.NewMessageConfig(godapnet.Alphapoc602RMaxMessageLength, callsigns, txGps, emerg)
+
+	// send message
+	sender.Send(msg, mc)
 }

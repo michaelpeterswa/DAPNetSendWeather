@@ -1,14 +1,15 @@
 package main
 
 import (
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
-	dapnet "github.com/michaelpeterswa/godapnet"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
+	"nw.codes/godapnet"
 )
 
 func main() {
@@ -29,14 +30,17 @@ func main() {
 		logger.Error("YAML failed to unmarshal to DapnetSettings", zap.Error(err))
 	}
 
-	me := dapnet.Sender{
-		Callsign: os.Getenv("CALLSIGN"),
-		Username: os.Getenv("DAPNET_USERNAME"),
-		Password: os.Getenv("DAPNET_PASSWORD"),
-	}
+	me := godapnet.NewSender(&http.Client{
+		Timeout: 10 * time.Second,
+	},
+		godapnet.DAPNetURL,
+		os.Getenv("CALLSIGN"),
+		os.Getenv("DAPNET_USERNAME"),
+		os.Getenv("DAPNET_PASSWORD"),
+	)
 
 	c := cron.New()
-	_, err = c.AddFunc("@every 2h0m0s", func() {
+	_, err = c.AddFunc(os.Getenv("CRON_STRING"), func() {
 		rawData := getWeatherData(os.Getenv("WEATHER_API_URL"))
 		data := parseWeatherData(rawData)
 
