@@ -7,7 +7,10 @@ import (
 var logger *zap.Logger
 
 func init() {
-	logger, _ = zap.NewProduction()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
 	defer func() {
 		err := logger.Sync()
 		if err != nil {
