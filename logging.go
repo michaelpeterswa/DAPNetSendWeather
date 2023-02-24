@@ -11,11 +11,5 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		err := logger.Sync()
-		if err != nil {
-			panic(err)
-		}
-	}()
 	logger.Info("DAPNetSendWeather is initializing...")
 }
