@@ -14,6 +14,6 @@ FROM alpine:3.17.2
 WORKDIR /root/
 COPY --from=stage-compile /go/src/app/dapnetsendweather ./
 
-RUN apk --no-cache add ca-certificates=20161130-r0
+RUN apk --no-cache add ca-certificates=20220614-r4
 
 ENTRYPOINT [ "./dapnetsendweather" ]  
