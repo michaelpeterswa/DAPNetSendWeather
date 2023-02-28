@@ -11,7 +11,7 @@ import (
 	"nw.codes/godapnet"
 )
 
-func getWeatherData(url string) []byte {
+func getWeatherData(logger *zap.Logger, url string) []byte {
 	resp, err := http.Get(url)
 	if err != nil {
 		logger.Fatal("Could not get weather data from URL", zap.String("url", url), zap.Error(err))
@@ -24,7 +24,7 @@ func getWeatherData(url string) []byte {
 	return body
 }
 
-func parseWeatherData(data []byte) Properties {
+func parseWeatherData(logger *zap.Logger, data []byte) Properties {
 	feature, err := geojson.UnmarshalFeature(data)
 	if err != nil {
 		logger.Fatal("Could not unmarshal GeoJSON feature", zap.Error(err))
@@ -37,14 +37,14 @@ func parseWeatherData(data []byte) Properties {
 	return properties
 }
 
-func sendCurrentForecast(f Forecast, sender *godapnet.Sender, settings DapnetSettings) {
+func sendCurrentForecast(logger *zap.Logger, f Forecast, sender *godapnet.Sender, settings DapnetSettings) {
 	msg := fmt.Sprintf("%s - %v%s - %s - Wind: %s %s", f.Name, f.Temperature, f.TemperatureUnit, f.ShortForecast, f.WindSpeed, f.WindDirection)
 	callsigns := settings.CallsignNames
 	txGps := settings.TransmitterGroupNames
 	emerg := false
 
 	// set configuration for message
-	mc := godapnet.NewMessageConfig(godapnet.Alphapoc602RMaxMessageLength, callsigns, txGps, emerg)
+	mc := godapnet.NewMessageConfig(sender.Callsign, godapnet.Alphapoc602RMaxMessageLength, callsigns, txGps, emerg)
 
 	// send message
 	err := sender.Send(msg, mc)

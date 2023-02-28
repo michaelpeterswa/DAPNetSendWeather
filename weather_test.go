@@ -48,7 +48,7 @@ func TestParseWeatherData(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			props := parseWeatherData(tc.weatherData)
+			props := parseWeatherData(nil, tc.weatherData)
 			assert.Equal(t, tc.result, props)
 		})
 	}
