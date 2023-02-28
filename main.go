@@ -15,7 +15,13 @@ import (
 func main() {
 	var settings DapnetSettings
 
-	err := godotenv.Load("./config/.env")
+	logger, err := zap.NewProduction()
+	if err != nil {
+		panic(err)
+	}
+	logger.Info("DAPNetSendWeather is initializing...")
+
+	err = godotenv.Load("./config/.env")
 	if err != nil {
 		logger.Fatal("Error loading .env file")
 	}
@@ -39,31 +45,51 @@ func main() {
 		os.Getenv("DAPNET_PASSWORD"),
 	)
 
+	weatherCron := NewWeatherCron(settings, me, logger)
+
 	c := cron.New()
-	_, err = c.AddFunc(os.Getenv("CRON_STRING"), func() {
-		rawData := getWeatherData(os.Getenv("WEATHER_API_URL"))
-		data := parseWeatherData(rawData)
-
-		for _, forecast := range data.Periods {
-			startTime, err := time.Parse(time.RFC3339, forecast.StartTime)
-			if err != nil {
-				logger.Fatal("Could not parse startTime", zap.Error(err))
-			}
-			endTime, err := time.Parse(time.RFC3339, forecast.EndTime)
-			if err != nil {
-				logger.Fatal("Could not parse endTime", zap.Error(err))
-			}
-
-			if startTime.Before(time.Now()) && endTime.After(time.Now()) {
-				logger.Info("Sending Forecast", zap.String("forecast", forecast.DetailedForecast))
-				sendCurrentForecast(forecast, me, settings)
-			}
-		}
-	})
+	_, err = c.AddFunc(os.Getenv("CRON_STRING"), weatherCron.Run())
 	if err != nil {
 		logger.Fatal("failed to add cron function", zap.Error(err))
 	}
 
 	c.Start()
 	select {}
+}
+
+type WeatherCron struct {
+	settings DapnetSettings
+	sender   *godapnet.Sender
+	logger   *zap.Logger
+}
+
+func NewWeatherCron(settings DapnetSettings, sender *godapnet.Sender, logger *zap.Logger) *WeatherCron {
+	return &WeatherCron{
+		settings: settings,
+		sender:   sender,
+		logger:   logger,
+	}
+}
+
+func (wc *WeatherCron) Run() func() {
+	return func() {
+		rawData := getWeatherData(wc.logger, os.Getenv("WEATHER_API_URL"))
+		data := parseWeatherData(wc.logger, rawData)
+
+		for _, forecast := range data.Periods {
+			startTime, err := time.Parse(time.RFC3339, forecast.StartTime)
+			if err != nil {
+				wc.logger.Fatal("Could not parse startTime", zap.Error(err))
+			}
+			endTime, err := time.Parse(time.RFC3339, forecast.EndTime)
+			if err != nil {
+				wc.logger.Fatal("Could not parse endTime", zap.Error(err))
+			}
+
+			if startTime.Before(time.Now()) && endTime.After(time.Now()) {
+				wc.logger.Info("Sending Forecast")
+				sendCurrentForecast(wc.logger, forecast, wc.sender, wc.settings)
+			}
+		}
+	}
 }
