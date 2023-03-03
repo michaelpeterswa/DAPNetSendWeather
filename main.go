@@ -74,21 +74,31 @@ func NewWeatherCron(settings DapnetSettings, sender *godapnet.Sender, logger *za
 func (wc *WeatherCron) Run() func() {
 	return func() {
 		rawData := getWeatherData(wc.logger, os.Getenv("WEATHER_API_URL"))
-		data := parseWeatherData(wc.logger, rawData)
+		data, err := parseWeatherData(wc.logger, rawData)
+		if err != nil {
+			wc.logger.Error("Could not parse weather data", zap.Error(err))
+			return
+		}
 
 		for _, forecast := range data.Periods {
 			startTime, err := time.Parse(time.RFC3339, forecast.StartTime)
 			if err != nil {
-				wc.logger.Fatal("Could not parse startTime", zap.Error(err))
+				wc.logger.Error("Could not parse startTime", zap.Error(err))
+				continue
 			}
 			endTime, err := time.Parse(time.RFC3339, forecast.EndTime)
 			if err != nil {
-				wc.logger.Fatal("Could not parse endTime", zap.Error(err))
+				wc.logger.Error("Could not parse endTime", zap.Error(err))
+				continue
 			}
 
 			if startTime.Before(time.Now()) && endTime.After(time.Now()) {
 				wc.logger.Info("Sending Forecast")
-				sendCurrentForecast(wc.logger, forecast, wc.sender, wc.settings)
+				err := sendCurrentForecast(wc.logger, forecast, wc.sender, wc.settings)
+				if err != nil {
+					wc.logger.Error("Could not send forecast", zap.Error(err))
+					continue
+				}
 			}
 		}
 	}

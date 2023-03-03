@@ -24,20 +24,20 @@ func getWeatherData(logger *zap.Logger, url string) []byte {
 	return body
 }
 
-func parseWeatherData(logger *zap.Logger, data []byte) Properties {
+func parseWeatherData(logger *zap.Logger, data []byte) (*Properties, error) {
 	feature, err := geojson.UnmarshalFeature(data)
 	if err != nil {
-		logger.Fatal("Could not unmarshal GeoJSON feature", zap.Error(err))
+		return nil, fmt.Errorf("could not unmarshal feature: %w", err)
 	}
-	var properties Properties
+	var properties *Properties
 	err = mapstructure.Decode(feature.Properties, &properties)
 	if err != nil {
-		logger.Fatal("Mapstructure Decode Failed", zap.Error(err))
+		return nil, fmt.Errorf("could not decode properties: %w", err)
 	}
-	return properties
+	return properties, err
 }
 
-func sendCurrentForecast(logger *zap.Logger, f Forecast, sender *godapnet.Sender, settings DapnetSettings) {
+func sendCurrentForecast(logger *zap.Logger, f Forecast, sender *godapnet.Sender, settings DapnetSettings) error {
 	msg := fmt.Sprintf("%s - %v%s - %s - Wind: %s %s", f.Name, f.Temperature, f.TemperatureUnit, f.ShortForecast, f.WindSpeed, f.WindDirection)
 	callsigns := settings.CallsignNames
 	txGps := settings.TransmitterGroupNames
@@ -49,6 +49,8 @@ func sendCurrentForecast(logger *zap.Logger, f Forecast, sender *godapnet.Sender
 	// send message
 	err := sender.Send(msg, mc)
 	if err != nil {
-		logger.Error("Could not send message", zap.Error(err))
+		return fmt.Errorf("could not send message: %w", err)
 	}
+
+	return nil
 }
