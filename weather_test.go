@@ -10,11 +10,11 @@ func TestParseWeatherData(t *testing.T) {
 	tests := []struct {
 		name        string
 		weatherData []byte
-		result      Properties
+		result      *Properties
 	}{
 		{
 			weatherData: []byte(`{ "properties":{ "updated":"a", "units":"a", "forecastGenerator":"a", "generatedAt":"a", "updateTime":"a", "validTimes":"a", "elevation":{ "value":1, "unitCode":"a" }, "periods":[ { "number":1, "name":"Tonight", "startTime":"2021-09-24T20:00:00-07:00", "endTime":"2021-09-25T06:00:00-07:00", "isDaytime":false, "temperature":53, "temperatureUnit":"F", "temperatureTrend":null, "windSpeed":"6 mph", "windDirection":"N", "icon":"https://api.weather.gov/icons/land/night/few?size=medium", "shortForecast":"Mostly Clear", "detailedForecast":"Mostly clear, with a low around 53. North wind around 6 mph." } ] } }`),
-			result: Properties{
+			result: &Properties{
 				Updated:           "a",
 				Units:             "a",
 				ForecastGenerator: "a",
